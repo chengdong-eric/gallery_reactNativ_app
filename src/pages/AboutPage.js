@@ -1,3 +1,3 @@
 import styles from '../theme/styles';
 
-export function DetailsPage() {}
+export function AboutPage() {}
