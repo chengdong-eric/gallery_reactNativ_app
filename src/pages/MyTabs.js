@@ -1,7 +1,6 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import styles from '../theme/styles';
 import { AboutPage } from './AboutPage';
-import { HomePage } from './HomePage';
+import HomeStack from './HomePage';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 const Tab = createBottomTabNavigator();
 
@@ -20,7 +19,7 @@ export function MyTabs() {
       }}>
       <Tab.Screen
         name="Home"
-        component={HomePage}
+        component={HomeStack}
         options={{
           tabBarLabel: 'Home',
           tabBarIcon: ({ color, size, focused }) => (
