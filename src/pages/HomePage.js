@@ -1,17 +1,31 @@
 import styles from '../theme/styles';
 import { useNavigation } from '@react-navigation/native';
-import { Button, RefreshControl, ScrollView, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  RefreshControl,
+  SafeAreaView,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { DetailPage } from './DetailPage';
 import { useEffect, useState } from 'react';
+import ArtCard from '../components/artCard';
 const Stack = createNativeStackNavigator();
 const artSearchURL =
   'https://collectionapi.metmuseum.org/public/collection/v1/';
 
 export default function HomeStack() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Home Page" component={HomeScreen} />
+    <Stack.Navigator initialRouteName="Home Page">
+      <Stack.Screen
+        name="Home Page"
+        component={HomeScreen}
+        options={{ headerShown: false }}
+      />
       <Stack.Screen name="Detail" component={DetailPage} />
     </Stack.Navigator>
   );
@@ -21,93 +35,133 @@ function HomeScreen() {
   const navigation = useNavigation();
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [data, setData] = useState(null);
+  const [data, setData] = useState([]);
+  const [error, setError] = useState(null);
 
   const onRefresh = () => {
-    console.log('Homepage refresh');
-
     setRefreshing(true);
-    setTimeout(() => {
+    loadData();
+  };
+
+  const renderItem = ({ item }) => {
+    return (
+      <View style={[{ marginVertical: 16 }]}>
+        <Pressable
+          onPress={() => {
+            console.log('pressed', item.objectID);
+            navigation.navigate('Detail', { data: item });
+          }}>
+          {({ pressed }) => {
+            return (
+              <ArtCard
+                title={item.title}
+                culture={item.culture}
+                objectDate={item.objectDate}
+                primaryImageSmall={item.primaryImageSmall}
+                pressed={pressed}
+              />
+            );
+          }}
+        </Pressable>
+      </View>
+    );
+  };
+
+  const loadData = async () => {
+    setLoading(true);
+    setError(null);
+    let url = new URL(artSearchURL + 'objects');
+    const queryParams = {
+      departmentIds: '6',
+    };
+    url.search = new URLSearchParams(queryParams).toString();
+
+    try {
+      const resp = await fetch(url);
+      if (!resp.ok)
+        throw new Error('Failed to get art objects from Met museum');
+
+      const data = await resp.json();
+      let artIdArray = shuffle(data.objectIDs).slice(0, 20);
+
+      const fetchPromises = artIdArray.map((id) => fetchArtDetails(id));
+      const results = await Promise.all(fetchPromises);
+      setData(results);
+    } catch (error) {
+      console.error('Fetch error', error);
+      setError(error.message);
+    } finally {
+      console.log(data[0]);
+      setLoading(false);
       setRefreshing(false);
-    }, 2000);
+    }
   };
 
   useEffect(() => {
-    const loadData = async () => {
-      let url = new URL(artSearchURL + 'objects');
-      const queryParams = {
-        departmentIds: '6',
-      };
-      url.search = new URLSearchParams(queryParams).toString();
-
-      try {
-        const resp = await fetch(url);
-        if (!resp.ok)
-          throw new Error('Failed to get art objects from Met museum');
-
-        const data = await resp.json();
-        let artIdArray = shuffle(data.objectIDs).slice(0, 20);
-
-        //TODO: 2/ Fetch details of 20 objects and save into array object
-        // 3/ Save array into state
-        // 4/ State update triggers loading cards on page
-        // 5/ Make flatlist
-
-        const fetchPromises = artIdArray.map((id) => fetchArtDetails(id));
-        const results = await Promise.all(fetchPromises);
-
-        setData(results);
-      } catch (error) {
-        console.error('Fetch error', error);
-      }
-    };
-    // loadData();
+    loadData();
   }, []);
 
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ScrollView
+          contentContainerStyle={styles.container}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }>
+          <ActivityIndicator size="large" />
+          <Text>Loading....</Text>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  if (error !== null) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ScrollView
+          contentContainerStyle={styles.container}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }>
+          <Text style={{ fontSize: 18, textAlign: 'center', marginBottom: 20 }}>
+            Unable to load artworks
+          </Text>
+          <Text
+            style={{
+              color: 'red',
+              textAlign: 'center',
+              margin: 16,
+              fontSize: 16,
+            }}>
+            Error: {error}. Pull to refresh to try again.
+          </Text>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
   return (
-    <ScrollView
-      // style={styles.container}
-      contentContainerStyle={styles.container}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-      }>
-      <Text>Home Screen</Text>
-      <Button
-        title="Go to Details Page"
-        onPress={() => navigation.navigate('Detail', {})}>
-        Button
-      </Button>
-    </ScrollView>
+    <SafeAreaView>
+      <FlatList
+        data={data}
+        keyExtractor={(item, index) =>
+          item.objectID?.toString() || `fallback-${index}`
+        }
+        renderItem={renderItem}
+        contentContainerStyle={{ padding: 16 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+        ListHeaderComponent={
+          <Text style={{ alignSelf: 'center' }}>
+            For Steve: Scroll up to refresh to get more art!
+          </Text>
+        }
+      />
+    </SafeAreaView>
   );
 }
-
-/* async function getArtIds() {
-  let url = new URL(artSearchURL + 'objects');
-  const queryParams = {
-    departmentIds: '6',
-  };
-  url.search = new URLSearchParams(queryParams).toString();
-
-  fetch(url)
-    .then((resp) => {
-      if (!resp.ok) throw new Error('No artwork available');
-      return resp.json();
-    })
-    .then((data) => {
-      // data: { total: Int, objectIDs: [Int] }
-      // TODO: 1/ finish fetching data and randomizing for 20 results
-      // 
-      let totalObjects = data.objectIDs;
-      const shuffled20Objects = shuffle(totalObjects).slice(0, 20);
-      return shuffled20Objects;
-    })
-    .then((ids) => {
-      setData(fetchAllArt(ids));
-    })
-    .catch((err) => {
-      console.warn(err.message);
-    });
-} */
 
 async function fetchArtDetails(id) {
   let url = new URL(artSearchURL + 'objects' + `/${id}`);
@@ -119,6 +173,7 @@ async function fetchArtDetails(id) {
     const {
       objectID,
       primaryImageSmall,
+      primaryImage,
       title,
       objectDate,
       medium,
@@ -130,6 +185,7 @@ async function fetchArtDetails(id) {
     return {
       objectID,
       primaryImageSmall,
+      primaryImage,
       title,
       objectDate,
       medium,
