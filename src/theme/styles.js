@@ -36,6 +36,14 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     textAlign: 'center',
   },
+  subheading: {
+    fontSize: 18,
+    fontWeight: '500',
+    color: '#333',
+    marginVertical: 6,
+    alignSelf: 'center',
+    textAlign: 'center',
+  },
   image: {
     width: '100%',
     height: 150,
@@ -70,6 +78,11 @@ const styles = StyleSheet.create({
   link: {
     color: 'blue',
     textDecorationLine: 'underline',
+  },
+  profilePicture: {
+    height: 250,
+    width: 250,
+    borderRadius: 16,
   },
 });
 

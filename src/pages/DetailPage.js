@@ -76,7 +76,7 @@ export function DetailPage({ route }) {
             styles.detailsContainer,
             {
               borderRadius: 16,
-              backgroundColor: '#dadadaff',
+              backgroundColor: '#efefefff',
               paddingBlock: 16,
               paddingInline: 24,
             },

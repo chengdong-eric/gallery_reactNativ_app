@@ -1,7 +1,7 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { AboutPage } from './AboutPage';
 import HomeStack from './HomePage';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 const Tab = createBottomTabNavigator();
 
 export function MyTabs() {
@@ -10,11 +10,12 @@ export function MyTabs() {
       screenOptions={{
         tabBarShowLabel: true,
         tabBarIconStyle: {
-          fontSize: 24,
+          fontSize: 22,
         },
         tabBarLabelPosition: 'below-icon',
         tabBarLabelStyle: {
-          fontSize: 16,
+          paddingTop: 4,
+          fontSize: 14,
         },
       }}>
       <Tab.Screen
